@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../api/supabaseClient';
-import { Edit, X } from 'lucide-react';
+import { Edit, Plus, Trash2, X } from 'lucide-react';
 import './AdminForms.css';
+
+const EMPTY_FORM = { name: '', location: '', hours: '', description: '', image: '' };
 
 const ShelterManager = () => {
   const [shelters, setShelters] = useState([]);
@@ -10,11 +13,10 @@ const ShelterManager = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   
   // Form State
-  const [formData, setFormData] = useState({
-    name: '', location: '', hours: '', description: '', image: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   const fetchData = async () => {
     setLoading(true);
@@ -23,19 +25,22 @@ const ShelterManager = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleOpenModal = (shelter) => {
-    setEditingId(shelter.id);
-    setFormData({
-      name: shelter.name,
-      location: shelter.location,
-      hours: shelter.hours,
-      description: shelter.description,
-      image: shelter.image
-    });
+  const handleOpenModal = (shelter = null) => {
+    if (shelter) {
+      setEditingId(shelter.id);
+      setFormData({
+        name: shelter.name,
+        location: shelter.location,
+        hours: shelter.hours,
+        description: shelter.description,
+        image: shelter.image || ''
+      });
+    } else {
+      setEditingId(null);
+      setFormData(EMPTY_FORM);
+    }
     setIsModalOpen(true);
   };
 
@@ -46,8 +51,19 @@ const ShelterManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await supabase.from('shelters').update(formData).eq('id', editingId);
+    if (editingId) {
+      await supabase.from('shelters').update(formData).eq('id', editingId);
+    } else {
+      await supabase.from('shelters').insert(formData);
+    }
     handleCloseModal();
+    fetchData();
+  };
+
+  const confirmDeletion = async () => {
+    if (!confirmDelete) return;
+    await supabase.from('shelters').delete().eq('id', confirmDelete.id);
+    setConfirmDelete(null);
     fetchData();
   };
 
@@ -55,6 +71,9 @@ const ShelterManager = () => {
     <div className="admin-page fade-in">
       <div className="admin-page-header">
         <h2>Gestión de Albergues</h2>
+        <button className="btn-primary" onClick={() => handleOpenModal()}>
+          <Plus size={18} /> Agregar Albergue
+        </button>
       </div>
 
       <div className="admin-table-container">
@@ -82,8 +101,11 @@ const ShelterManager = () => {
                   </td>
                   <td>{shelter.hours}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <button onClick={() => handleOpenModal(shelter)} className="icon-btn edit-btn" title="Editar Información">
-                      <Edit size={16} /> Editar
+                    <button onClick={() => handleOpenModal(shelter)} className="icon-btn edit-btn" title="Editar">
+                      <Edit size={16} />
+                    </button>
+                    <button onClick={() => setConfirmDelete(shelter)} className="icon-btn delete-btn" title="Eliminar">
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
@@ -93,11 +115,12 @@ const ShelterManager = () => {
         )}
       </div>
 
-      {isModalOpen && (
+      {/* Edit/Create Modal */}
+      {isModalOpen && createPortal(
         <div className="modal-overlay">
-          <div className="modal-content glass-panel">
+          <div className="modal-content glass-panel" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
-              <h3>Editar Información del Albergue</h3>
+              <h3>{editingId ? 'Editar Albergue' : 'Nuevo Albergue'}</h3>
               <button onClick={handleCloseModal} className="modal-close"><X size={20} /></button>
             </div>
             
@@ -119,7 +142,7 @@ const ShelterManager = () => {
 
               <div className="form-group">
                 <label>URL de la Fotografía Principal</label>
-                <input required type="url" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="filter-input" />
+                <input type="url" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="filter-input" placeholder="https://..." />
               </div>
 
               <div className="form-group">
@@ -129,9 +152,29 @@ const ShelterManager = () => {
 
               <div className="modal-footer">
                 <button type="button" onClick={handleCloseModal} className="btn-secondary" style={{ background: '#e2e8f0', color: '#475569' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Cambios</button>
+                <button type="submit" className="btn-primary">{editingId ? 'Guardar Cambios' : 'Crear Albergue'}</button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {confirmDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h3 style={{ color: 'var(--danger, #ef4444)' }}>Confirmar Eliminación</h3>
+            </div>
+            <p style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>
+              ¿Estás seguro de que quieres eliminar el albergue <strong style={{ color: 'var(--text-main)' }}>{confirmDelete.name}</strong>?
+              <br/><span style={{ fontSize: '0.85rem' }}>Esta acción no se puede deshacer y afectará a los perros asignados a él.</span>
+            </p>
+            <div className="modal-footer">
+              <button onClick={() => setConfirmDelete(null)} className="btn-secondary" style={{ background: '#e2e8f0', color: '#475569' }}>Cancelar</button>
+              <button onClick={confirmDeletion} className="btn-primary" style={{ background: 'var(--danger, #ef4444)' }}>Sí, Eliminar</button>
+            </div>
           </div>
         </div>
       )}

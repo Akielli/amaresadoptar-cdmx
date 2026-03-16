@@ -12,6 +12,7 @@ const DogManager = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // dog object to delete
   
   // Search & Pagination State
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,6 +141,17 @@ const DogManager = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  const handleDelete = async (dog) => {
+    setConfirmDelete(dog);
+  };
+
+  const confirmDeletion = async () => {
+    if (!confirmDelete) return;
+    await supabase.from('dogs').delete().eq('id', confirmDelete.id);
+    setConfirmDelete(null);
+    fetchData();
+  };
+
   const filteredDogs = dogs.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (d.folio && d.folio.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -207,7 +219,7 @@ const DogManager = () => {
                     <button onClick={() => handleOpenModal(dog)} className="icon-btn edit-btn" title="Editar">
                       <Edit size={16} />
                     </button>
-                    <button onClick={() => handleDelete(dog.id)} className="icon-btn delete-btn" title="Eliminar">
+                    <button onClick={() => handleDelete(dog)} className="icon-btn delete-btn" title="Eliminar">
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -344,6 +356,25 @@ const DogManager = () => {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {confirmDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h3 style={{ color: 'var(--danger, #ef4444)' }}>Confirmar Eliminación</h3>
+            </div>
+            <p style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>
+              ¿Estás seguro de que quieres eliminar a <strong style={{ color: 'var(--text-main)' }}>{confirmDelete.name}</strong>?
+              <br/><span style={{ fontSize: '0.85rem' }}>Esta acción no se puede deshacer.</span>
+            </p>
+            <div className="modal-footer">
+              <button onClick={() => setConfirmDelete(null)} className="btn-secondary" style={{ background: '#e2e8f0', color: '#475569' }}>Cancelar</button>
+              <button onClick={confirmDeletion} className="btn-primary" style={{ background: 'var(--danger, #ef4444)' }}>Sí, Eliminar</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
