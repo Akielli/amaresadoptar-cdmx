@@ -8,7 +8,7 @@ const Dashboard = () => {
         <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)' }}>
           <h3 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>Panel de Control</h3>
           <p style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Bienvenido al sistema de gestión de "Amar es Adoptar". 
+            Bienvenido al sistema de gestión de "Rescate Canino". 
             Desde aquí podrás agregar, editar o eliminar la información de los perritos, 
             así como actualizar los datos de los albergues. Todos los cambios que realices 
             aquí se reflejarán inmediatamente en el portal público de transparencia.

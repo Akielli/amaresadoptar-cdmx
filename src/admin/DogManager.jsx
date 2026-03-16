@@ -13,12 +13,14 @@ const DogManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
-  // Search State
+  // Search & Pagination State
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   // Form State
   const [formData, setFormData] = useState({
-    name: '', size: 'Mediano', sex: 'Macho', age: '', 
+    name: '', folio: '', size: 'Mediano', sex: 'Macho', age: '', 
     description: '', shelter_id: '', existingPhotos: [], newFiles: []
   });
 
@@ -48,6 +50,7 @@ const DogManager = () => {
       setEditingId(dog.id);
       setFormData({
         name: dog.name,
+        folio: dog.folio || '',
         size: dog.size,
         sex: dog.sex,
         age: dog.age,
@@ -59,7 +62,7 @@ const DogManager = () => {
     } else {
       setEditingId(null);
       setFormData({
-        name: '', size: 'Mediano', sex: 'Macho', age: '', 
+        name: '', folio: '', size: 'Mediano', sex: 'Macho', age: '', 
         description: '', shelter_id: shelters[0]?.id || '', existingPhotos: [], newFiles: []
       });
     }
@@ -112,6 +115,7 @@ const DogManager = () => {
 
     const payload = {
       name: formData.name,
+      folio: formData.folio,
       size: formData.size,
       sex: formData.sex,
       age: formData.age,
@@ -131,16 +135,21 @@ const DogManager = () => {
     fetchData(); 
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar a este perrito?')) {
-      await supabase.from('dogs').delete().eq('id', id);
-      fetchData();
-    }
-  };
+  // Navigation effect when searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
-  const displayedDogs = dogs
-    .filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .slice(0, 50);
+  const filteredDogs = dogs.filter(d => 
+    d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (d.folio && d.folio.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const totalPages = Math.ceil(filteredDogs.length / ITEMS_PER_PAGE);
+  const displayedDogs = filteredDogs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="admin-page fade-in">
@@ -186,7 +195,10 @@ const DogManager = () => {
                   <td>
                     <img src={dog.photos[0] || 'https://via.placeholder.com/40'} alt={dog.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                   </td>
-                  <td style={{ fontWeight: '600', color: 'var(--text-main)' }}>{dog.name}</td>
+                  <td style={{ fontWeight: '600', color: 'var(--text-main)' }}>
+                    {dog.name}
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '400' }}>Folio: {dog.folio || 'N/A'}</div>
+                  </td>
                   <td>{dog.size}</td>
                   <td>{dog.sex}</td>
                   <td>{dog.age}</td>
@@ -204,8 +216,31 @@ const DogManager = () => {
             </tbody>
           </table>
         )}
-        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          Mostrando los 50 perritos más recientes.
+        <div style={{ padding: '1rem',  display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Mostrando {displayedDogs.length} de {filteredDogs.length} perritos.
+          </div>
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+              >
+                Anterior
+              </button>
+              <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Página {currentPage} de {totalPages}</span>
+              <button 
+                className="btn-secondary"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -224,12 +259,15 @@ const DogManager = () => {
                   <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="filter-input" />
                 </div>
                 <div className="form-group">
+                  <label>Folio</label>
+                  <input type="text" value={formData.folio} onChange={e => setFormData({...formData, folio: e.target.value})} className="filter-input" placeholder="Ej. BVA-001" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label>Edad</label>
                   <input required type="text" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="filter-input" placeholder="Ej. 2 años" />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>Tamaño</label>
                   <select value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} className="filter-select">

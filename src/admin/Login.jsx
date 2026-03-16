@@ -37,7 +37,7 @@ const Login = () => {
         <div className="login-header">
           <img src="https://cdn.cdmx.gob.mx/apps/amaresadoptar/Iconos/Small/icono-perritocorazon.svg" alt="Logo" className="login-logo" />
           <h2>Acceso Administrador</h2>
-          <p>Portal Amar es Adoptar</p>
+          <p>Portal Rescate Canino</p>
         </div>
         
         {error && <div className="login-error">{error}</div>}

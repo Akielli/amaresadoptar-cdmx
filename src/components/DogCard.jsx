@@ -52,6 +52,10 @@ const DogCard = ({ dog }) => {
         
         <div className="dog-attributes">
           <div className="attr-item">
+            <span className="attr-label">Folio</span>
+            <span className="attr-value">{dog.folio || '-'}</span>
+          </div>
+          <div className="attr-item">
             <span className="attr-label">Tamaño</span>
             <span className="attr-value">{dog.size}</span>
           </div>

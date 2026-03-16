@@ -20,7 +20,7 @@ const AdminLayout = () => {
           <img src="https://cdn.cdmx.gob.mx/apps/amaresadoptar/Iconos/Small/icono-perritocorazon.svg" alt="Logo" className="admin-logo" />
           <div className="admin-brand-text">
             <h2>Panel Admin</h2>
-            <span>Amar es Adoptar</span>
+            <span>Rescate Canino</span>
           </div>
         </div>
         

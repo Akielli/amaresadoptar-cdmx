@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="footer-info">
           <h3>Gobierno de la Ciudad de México</h3>
           <p>Portal de Transparencia de Albergues Caninos</p>
-          <p className="copyright">&copy; {new Date().getFullYear()} Amar es Adoptar. Todos los derechos reservados.</p>
+          <p className="copyright">&copy; {new Date().getFullYear()} Rescate Canino. Todos los derechos reservados.</p>
         </div>
         <div className="footer-links">
           <h4>Atención Ciudadana</h4>
